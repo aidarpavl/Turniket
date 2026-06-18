@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FaceAttend — Турникет</title>
+<style>
+:root{
+  --bg:#f0f2f5;--surface:#fff;--s2:#f7f8fa;--s3:#eef0f3;
+  --text:#1a1a2e;--t2:#555;--t3:#999;
+  --border:rgba(0,0,0,.1);--border2:rgba(0,0,0,.2);
+  --blue:#1a6fc4;--blue2:#0f52a0;--blue-bg:#e8f0fd;
+  --green:#2d7d32;--green-bg:#e8f5e9;
+  --red:#c62828;--red-bg:#ffebee;
+  --amber:#e65100;--amber-bg:#fff3e0;
+  --r:8px;--rl:14px
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:300px 1fr;min-height:100vh}
+.side{background:var(--surface);border-right:1px solid var(--border);padding:16px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;height:100vh;position:sticky;top:0}
+.main{padding:16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+
+/* Logo */
+.logo{display:flex;align-items:center;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.logo-icon{width:42px;height:42px;background:var(--blue);border-radius:var(--r);display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;flex-shrink:0}
+.logo-title{font-size:16px;font-weight:700;letter-spacing:-.3px}
+.logo-sub{font-size:11px;color:var(--t2)}
+
+/* Section labels */
+.sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:6px}
+
+/* Status */
+.status-box{background:var(--s2);border-radius:var(--r);padding:10px 14px;display:flex;flex-direction:column;gap:7px}
+.srow{display:flex;align-items:center;gap:8px;font-size:12px}
+.dot{width:9px;height:9px;border-radius:50%;background:#ccc;flex-shrink:0;transition:background .4s}
+.g{background:#2d7d32}.r{background:#c62828}.a{background:#e65100}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 16px;font-size:13px;font-weight:500;border-radius:var(--r);border:1px solid var(--border2);background:var(--surface);color:var(--text);cursor:pointer;width:100%;font-family:inherit;transition:all .15s;line-height:1.2}
+.btn:hover{background:var(--s2)}.btn:active{transform:scale(.98)}.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-blue{background:var(--blue);color:#fff;border-color:var(--blue)}.btn-blue:hover{background:var(--blue2)}
+.btn-green{background:var(--green);color:#fff;border-color:var(--green)}.btn-green:hover{background:#1b5e20}
+.btn-red{background:var(--red);color:#fff;border-color:var(--red)}.btn-red:hover{background:#b71c1c}
+.btn-sm{padding:6px 12px;font-size:12px;width:auto}
+
+/* Form */
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:11px;color:var(--t2);font-weight:500}
+input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);font-size:13px;background:var(--surface);color:var(--text);outline:none;font-family:inherit}
+input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,111,196,.15)}
+
+/* Alerts */
+.alert{padding:9px 13px;border-radius:var(--r);font-size:12px;line-height:1.5}
+.al-ok{background:var(--green-bg);color:var(--green)}.al-err{background:var(--red-bg);color:var(--red)}
+.al-info{background:var(--blue-bg);color:var(--blue)}.al-warn{background:var(--amber-bg);color:var(--amber)}
+
+/* Badges */
+.badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:999px;font-weight:600}
+.b-blue{background:var(--blue-bg);color:var(--blue2)}.b-green{background:var(--green-bg);color:var(--green)}
+.b-red{background:var(--red-bg);color:var(--red)}.b-gray{background:var(--s3);color:var(--t2)}
+
+/* Employee list */
+.emp-list{display:flex;flex-direction:column;gap:5px;max-height:220px;overflow-y:auto}
+.emp-item{display:flex;align-items:center;gap:9px;padding:7px 10px;background:var(--s2);border-radius:var(--r);transition:background .15s}
+.emp-item:hover{background:var(--s3)}
+.emp-ava{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--blue2)}
+.emp-nm{flex:1;font-size:13px;font-weight:500}
+.emp-info{font-size:11px;color:var(--t3)}
+.emp-x{cursor:pointer;color:var(--t3);font-size:18px;padding:2px 5px;border-radius:4px}.emp-x:hover{color:var(--red);background:var(--red-bg)}
+.empty{text-align:center;padding:14px;color:var(--t3);font-size:12px}
+
+/* Camera */
+.cam-card{background:var(--surface);border-radius:var(--rl);border:1px solid var(--border);overflow:hidden}
+.cam-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)}
+.cam-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.cam-body{position:relative;background:#0a0a0a;width:100%;aspect-ratio:16/9}
+.cam-img{width:100%;height:100%;object-fit:contain;display:block}
+.cam-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#555;gap:10px}
+.cam-ph .icon{font-size:56px}
+.cam-ph p{font-size:13px;color:#888}
+.cam-foot{padding:12px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.cam-foot .btn{flex:1;min-width:130px}
+.rec-badge{background:rgba(220,53,69,.9);color:#fff;font-size:11px;padding:4px 12px;border-radius:999px;display:flex;align-items:center;gap:5px;position:absolute;top:10px;left:10px}
+.rec-dot{width:7px;height:7px;border-radius:50%;background:#fff;animation:blink 1.1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.1}}
+.face-count{position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,.65);color:#fff;font-size:12px;padding:4px 12px;border-radius:999px}
+
+/* Add employee modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--rl);padding:22px;width:500px;max-width:96vw;display:flex;flex-direction:column;gap:14px;max-height:95vh;overflow-y:auto}
+.modal-title{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px}
+.snap-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.snap-item{position:relative;border-radius:var(--r);overflow:hidden;background:#111;aspect-ratio:4/3}
+.snap-item img{width:100%;height:100%;object-fit:cover}
+.snap-del{position:absolute;top:4px;right:4px;background:rgba(220,53,69,.85);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:16px;width:24px;height:24px;display:flex;align-items:center;justify-content:center}
+.snap-ph{display:flex;align-items:center;justify-content:center;height:100%;color:#666;font-size:11px;flex-direction:column;gap:4px}
+
+/* Log */
+.log-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:16px}
+.log-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.log-title{font-size:15px;font-weight:700}
+.log-list{display:flex;flex-direction:column;gap:6px;max-height:350px;overflow-y:auto}
+.log-item{display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--s2);border-radius:var(--r)}
+.log-ava{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--blue2)}
+.log-info{flex:1}.log-nm{font-weight:600;font-size:13px}.log-t{font-size:11px;color:var(--t2);margin-top:2px}
+.log-badges{display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap}
+
+/* Snap camera for modal */
+.snap-cam-wrap{position:relative;background:#000;border-radius:var(--r);overflow:hidden;aspect-ratio:4/3;width:100%}
+#snap-video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
+.snap-btns{display:flex;gap:8px}.snap-btns .btn{flex:1}
+
+/* Loader */
+.loader{display:none;position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-size:14px;color:var(--t2)}
+.loader.show{display:flex}
+.spin{width:36px;height:36px;border:3px solid #ddd;border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Responsive */
+@media(max-width:768px){.layout{grid-template-columns:1fr}.side{height:auto;position:static}}
+</style>
+</head>
+<body>
+
+<div class="loader" id="loader"><div class="spin"></div><div>Обработка…</div></div>
+
+<div class="layout">
+<!-- ── SIDEBAR ─────────────────────────────────────── -->
+<aside class="side">
+  <div class="logo">
+    <div class="logo-icon">👁</div>
+    <div><div class="logo-title">FaceAttend</div><div class="logo-sub">Турникет — учёт сотрудников</div></div>
+  </div>
+
+  <!-- STATUS -->
+  <div>
+    <div class="sec">Статус системы</div>
+    <div class="status-box">
+      <div class="srow"><div class="dot" id="d-model"></div><span id="s-model">Проверка…</span></div>
+      <div class="srow"><div class="dot" id="d-cam"></div><span id="s-cam">Камера не активна</span></div>
+      <div class="srow"><div class="dot" id="d-tg"></div><span id="s-tg">Telegram настраивается…</span></div>
+    </div>
+  </div>
+
+  <!-- EMPLOYEES -->
+  <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-height:0">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="sec" style="margin:0">Сотрудники</div>
+      <span class="badge b-blue" id="emp-cnt">0</span>
+    </div>
+    <div class="emp-list" id="emp-list"><div class="empty">Нет сотрудников</div></div>
+    <button class="btn btn-green" onclick="openAddModal()">➕ Добавить сотрудника</button>
+    <button class="btn" onclick="retrain()" style="font-size:12px">🔄 Переобучить модель</button>
+  </div>
+
+  <!-- TELEGRAM TEST -->
+  <div>
+    <div class="sec">Telegram Bot</div>
+    <div style="font-size:11px;color:var(--t2);margin-bottom:8px;line-height:1.5">
+      Токен: <code style="background:var(--s3);padding:1px 4px;border-radius:3px">настроен в app.py</code><br>
+      Chat ID: <code style="background:var(--s3);padding:1px 4px;border-radius:3px" id="tg-cid-show">…</code>
+    </div>
+    <button class="btn btn-blue" onclick="testTg()">📨 Тест уведомления</button>
+    <div id="tg-msg" style="display:none;margin-top:8px"></div>
+  </div>
+
+  <div>
+    <div class="sec">Настройки</div>
+    <div class="field">
+      <label>Порог распознавания (0–100, меньше = строже)</label>
+      <input type="text" id="threshold" value="80" style="width:80px">
+    </div>
+  </div>
+</aside>
+
+<!-- ── MAIN ────────────────────────────────────────── -->
+<main class="main">
+
+  <!-- CAMERA CARD -->
+  <div class="cam-card">
+    <div class="cam-header">
+      <div class="cam-title">📹 Камера наблюдения</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="badge b-gray" id="model-badge">Модель не готова</span>
+      </div>
+    </div>
+    <div class="cam-body" id="cam-body">
+      <img id="cam-img" class="cam-img" style="display:none" alt="camera feed">
+      <div class="cam-ph" id="cam-ph">
+        <div class="icon">📷</div>
+        <p>Нажмите «Включить камеру»</p>
+        <p style="font-size:11px;color:#666">Разрешите доступ к камере в браузере</p>
+      </div>
+      <div class="rec-badge" id="rec-badge" style="display:none">
+        <div class="rec-dot"></div> Идёт распознавание
+      </div>
+      <div class="face-count" id="face-count" style="display:none">Лиц: 0</div>
+    </div>
+    <div class="cam-foot">
+      <button class="btn btn-blue" id="btn-start" onclick="startCam()">▶ Включить камеру</button>
+      <button class="btn btn-red" id="btn-stop" onclick="stopCam()" disabled>■ Остановить</button>
+    </div>
+  </div>
+
+  <!-- LOG CARD -->
+  <div class="log-card">
+    <div class="log-head">
+      <div class="log-title">📋 Журнал прихода</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="badge b-blue" id="log-cnt">0</span>
+        <button class="btn btn-sm" onclick="clearLog()">🗑 Очистить</button>
+        <button class="btn btn-sm" onclick="fetchLog()">↻ Обновить</button>
+      </div>
+    </div>
+    <div class="log-list" id="log-list">
+      <div class="empty">Журнал пуст. Включите камеру.</div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ── ADD EMPLOYEE MODAL ─────────────────────────── -->
+<div class="modal-bg" id="modal">
+<div class="modal">
+  <div class="modal-title">👤 Добавить сотрудника</div>
+
+  <div class="field">
+    <label>Имя и фамилия сотрудника</label>
+    <input type="text" id="new-name" placeholder="Иванов Иван Иванович">
+  </div>
+
+  <!-- Camera for snapping -->
+  <div>
+    <div style="font-size:12px;color:var(--t2);margin-bottom:6px">
+      Сделайте <b>3–5 фотографий</b> с разных ракурсов для точного распознавания
+    </div>
+    <div class="snap-cam-wrap">
+      <video id="snap-video" autoplay muted playsinline></video>
+    </div>
+    <div class="snap-btns" style="margin-top:8px">
+      <button class="btn btn-green" onclick="takeSnap()">📷 Сфотографировать</button>
+      <button class="btn" onclick="clearSnaps()">🗑 Очистить все</button>
+    </div>
+  </div>
+
+  <!-- Снимки -->
+  <div>
+    <div style="font-size:11px;color:var(--t2);margin-bottom:6px">
+      Сделанные снимки: <span id="snap-cnt">0</span>
+    </div>
+    <div class="snap-grid" id="snap-grid"></div>
+  </div>
+
+  <div id="add-msg" style="display:none"></div>
+
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-blue" onclick="confirmAdd()" id="btn-add-ok">✓ Сохранить сотрудника</button>
+    <button class="btn btn-red" onclick="closeModal()">✕ Отмена</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ─── STATE ─────────────────────────────────────────────────────────────────
+let camStream = null;
+let camRunning = false;
+let snapStream = null;
+let snapPhotos = [];   // base64 dataURLs
+let frameTimer = null;
+let employees = [];
+
+const camVideo = document.createElement('video');
+camVideo.setAttribute('autoplay',''); camVideo.setAttribute('muted',''); camVideo.setAttribute('playsinline','');
+camVideo.style.display='none'; document.body.appendChild(camVideo);
+
+const camCanvas = document.createElement('canvas');
+
+// ─── HELPERS ───────────────────────────────────────────────────────────────
+function inits(n){return n.trim().split(/\s+/).map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'?'}
+const PAL=[['#c8e6c9','#1b5e20'],['#bbdefb','#0d47a1'],['#fce4ec','#880e4f'],['#fff9c4','#f57f17'],['#ede7f6','#311b92'],['#fbe9e7','#bf360c']];
+function pal(i){return PAL[i%PAL.length]}
+function showAlert(id,cls,html){const e=document.getElementById(id);e.style.display='block';e.className='alert '+cls;e.innerHTML=html}
+function hideEl(id){document.getElementById(id).style.display='none'}
+function setText(id,t){document.getElementById(id).textContent=t}
+function setDot(id,c){document.getElementById(id).className='dot '+c}
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
+async function init(){
+  await fetchStatus();
+  await fetchEmployees();
+  await fetchLog();
+  // open snap camera immediately for modal
+}
+
+async function fetchStatus(){
+  try{
+    const r=await fetch('/api/status');
+    const d=await r.json();
+    if(d.model_ready){
+      setDot('d-model','g');
+      setText('s-model',`Модель готова (${d.employees} сотр.)`);
+      document.getElementById('model-badge').textContent=`${d.employees} сотрудников`;
+      document.getElementById('model-badge').className='badge b-green';
+    }else{
+      setDot('d-model','a');
+      setText('s-model','Модель обучается…');
+    }
+    if(d.tg_token){
+      setDot('d-tg','g');
+      setText('s-tg','Telegram настроен');
+      document.getElementById('tg-cid-show').textContent=d.tg_chat;
+    }
+  }catch(e){}
+}
+
+async function fetchEmployees(){
+  try{
+    const r=await fetch('/api/employees');
+    employees=await r.json();
+    renderEmps();
+  }catch(e){}
+}
+
+function renderEmps(){
+  const el=document.getElementById('emp-list');
+  document.getElementById('emp-cnt').textContent=employees.length;
+  if(!employees.length){el.innerHTML='<div class="empty">Нет сотрудников. Добавьте первого.</div>';return}
+  el.innerHTML=employees.map((e,i)=>{
+    const [bg,fg]=pal(i);
+    const ava=e.thumb
+      ?`<img class="emp-ava" src="${e.thumb}?t=${Date.now()}" alt="${e.name}">`
+      :`<div class="emp-ava" style="background:${bg};color:${fg}">${inits(e.name)}</div>`;
+    return `<div class="emp-item">${ava}
+      <div style="flex:1">
+        <div class="emp-nm">${e.name}</div>
+        <div class="emp-info">${e.photo_count} фото</div>
+      </div>
+      <span class="emp-x" onclick="delEmp(${e.id},'${e.name}')">✕</span>
+    </div>`;
+  }).join('');
+}
+
+async function delEmp(id,name){
+  if(!confirm(`Удалить сотрудника «${name}»?`))return;
+  await fetch('/api/delete_employee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+  await fetchEmployees();
+  await fetchStatus();
+}
+
+async function retrain(){
+  await fetch('/api/retrain',{method:'POST'});
+  showAlert('tg-msg','al-info','🔄 Переобучение запущено…');
+  setTimeout(fetchStatus,3000);
+}
+
+// ─── CAMERA (live recognition) ─────────────────────────────────────────────
+async function startCam(){
+  try{
+    camStream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},facingMode:'user'}});
+    camVideo.srcObject=camStream;
+    await new Promise(r=>{camVideo.onloadedmetadata=r});
+    await camVideo.play();
+    camCanvas.width=camVideo.videoWidth;
+    camCanvas.height=camVideo.videoHeight;
+
+    document.getElementById('cam-ph').style.display='none';
+    document.getElementById('cam-img').style.display='block';
+    document.getElementById('rec-badge').style.display='flex';
+    document.getElementById('face-count').style.display='block';
+    document.getElementById('btn-start').disabled=true;
+    document.getElementById('btn-stop').disabled=false;
+    setDot('d-cam','g'); setText('s-cam','Камера активна');
+    camRunning=true;
+    sendFrames();
+  }catch(err){
+    let msg='Ошибка доступа к камере.';
+    if(err.name==='NotAllowedError')msg='Доступ запрещён. Нажмите 🔒 в адресной строке и разрешите камеру.';
+    else if(err.name==='NotFoundError')msg='Камера не найдена.';
+    else if(err.name==='NotReadableError')msg='Камера занята другим приложением.';
+    else msg=err.message;
+    alert(msg);
+    setDot('d-cam','r'); setText('s-cam','Ошибка камеры');
+  }
+}
+
+function stopCam(){
+  camRunning=false;
+  if(frameTimer){clearTimeout(frameTimer);frameTimer=null}
+  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}
+  document.getElementById('cam-ph').style.display='flex';
+  document.getElementById('cam-img').style.display='none';
+  document.getElementById('rec-badge').style.display='none';
+  document.getElementById('face-count').style.display='none';
+  document.getElementById('btn-start').disabled=false;
+  document.getElementById('btn-stop').disabled=true;
+  setDot('d-cam','r'); setText('s-cam','Камера остановлена');
+}
+
+async function sendFrames(){
+  if(!camRunning)return;
+  try{
+    const ctx=camCanvas.getContext('2d');
+    ctx.drawImage(camVideo,0,0);
+    const b64=camCanvas.toDataURL('image/jpeg',0.75);
+    const resp=await fetch('/api/recognize',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({frame:b64})
+    });
+    const data=await resp.json();
+    if(data.ok){
+      document.getElementById('cam-img').src='data:image/jpeg;base64,'+data.annotated;
+      setText('face-count',`Лиц: ${data.results.length}`);
+      // refresh model status quietly
+      if(data.model_ready){
+        setDot('d-model','g');
+        setText('s-model',`Модель готова (${data.employees} сотр.)`);
+      }
+      // refresh log if arrival happened
+      if(data.results.some(r=>r.name!=='Неизвестно'&&r.name!=='Модель не обучена')){
+        setTimeout(fetchLog,1500);
+      }
+    }
+  }catch(e){}
+  if(camRunning)frameTimer=setTimeout(sendFrames,800);
+}
+
+// ─── ADD EMPLOYEE MODAL ────────────────────────────────────────────────────
+async function openAddModal(){
+  snapPhotos=[];
+  renderSnaps();
+  document.getElementById('new-name').value='';
+  hideEl('add-msg');
+  document.getElementById('modal').classList.add('open');
+  // Start snap camera
+  try{
+    snapStream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},facingMode:'user'}});
+    document.getElementById('snap-video').srcObject=snapStream;
+    await document.getElementById('snap-video').play();
+  }catch(e){
+    showAlert('add-msg','al-err','Не удалось открыть камеру: '+e.message);
+  }
+}
+
+function closeModal(){
+  document.getElementById('modal').classList.remove('open');
+  if(snapStream){snapStream.getTracks().forEach(t=>t.stop());snapStream=null}
+  snapPhotos=[];
+  renderSnaps();
+}
+
+function takeSnap(){
+  const sv=document.getElementById('snap-video');
+  if(!sv.srcObject){showAlert('add-msg','al-err','Камера не активна');return}
+  const c=document.createElement('canvas');
+  c.width=sv.videoWidth; c.height=sv.videoHeight;
+  c.getContext('2d').drawImage(sv,0,0);
+  snapPhotos.push(c.toDataURL('image/jpeg',0.85));
+  renderSnaps();
+  hideEl('add-msg');
+}
+
+function clearSnaps(){snapPhotos=[];renderSnaps()}
+
+function deleteSnap(i){snapPhotos.splice(i,1);renderSnaps()}
+
+function renderSnaps(){
+  document.getElementById('snap-cnt').textContent=snapPhotos.length;
+  const grid=document.getElementById('snap-grid');
+  grid.innerHTML=snapPhotos.map((s,i)=>`
+    <div class="snap-item">
+      <img src="${s}" alt="Снимок ${i+1}">
+      <button class="snap-del" onclick="deleteSnap(${i})">✕</button>
+    </div>`).join('');
+}
+
+async function confirmAdd(){
+  const name=document.getElementById('new-name').value.trim();
+  if(!name){showAlert('add-msg','al-warn','Введите имя сотрудника');return}
+  if(snapPhotos.length<1){showAlert('add-msg','al-warn','Сделайте хотя бы 1 фотографию');return}
+
+  document.getElementById('btn-add-ok').disabled=true;
+  document.getElementById('btn-add-ok').textContent='⏳ Сохранение…';
+
+  try{
+    const resp=await fetch('/api/add_employee',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,photos:snapPhotos})
+    });
+    const d=await resp.json();
+    if(d.ok){
+      closeModal();
+      await fetchEmployees();
+      await fetchStatus();
+      setTimeout(fetchStatus,3000);
+    }else{
+      showAlert('add-msg','al-err','✗ '+d.error);
+    }
+  }catch(e){
+    showAlert('add-msg','al-err','Ошибка: '+e.message);
+  }
+  document.getElementById('btn-add-ok').disabled=false;
+  document.getElementById('btn-add-ok').textContent='✓ Сохранить сотрудника';
+}
+
+// ─── LOG ──────────────────────────────────────────────────────────────────
+async function fetchLog(){
+  try{
+    const r=await fetch('/api/log');
+    const items=await r.json();
+    renderLog(items);
+  }catch(e){}
+}
+
+function renderLog(items){
+  const el=document.getElementById('log-list');
+  document.getElementById('log-cnt').textContent=items.length;
+  if(!items.length){el.innerHTML='<div class="empty">Журнал пуст. Включите камеру.</div>';return}
+  el.innerHTML=items.map((e,i)=>{
+    const idx=employees.findIndex(em=>em.name===e.name);
+    const [bg,fg]=idx>=0?pal(idx):['#eee','#555'];
+    const ava=idx>=0&&employees[idx]?.thumb
+      ?`<img class="log-ava" src="${employees[idx].thumb}" alt="${e.name}">`
+      :`<div class="log-ava" style="background:${bg};color:${fg}">${inits(e.name)}</div>`;
+    return `<div class="log-item">${ava}
+      <div class="log-info">
+        <div class="log-nm">${e.name}</div>
+        <div class="log-t">${e.date} в ${e.time}</div>
+      </div>
+      <div class="log-badges">
+        <span class="badge b-green">✓ Прибыл</span>
+        <span class="badge ${e.tg_ok?'b-blue':'b-red'}">${e.tg_ok?'✓ Telegram':'✗ TG'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function clearLog(){
+  if(!confirm('Очистить журнал?'))return;
+  // just re-fetch (log lives in memory on server)
+  await fetch('/api/log');
+  document.getElementById('log-list').innerHTML='<div class="empty">Журнал очищен.</div>';
+  document.getElementById('log-cnt').textContent='0';
+}
+
+async function testTg(){
+  const r=await fetch('/api/test_telegram',{method:'POST'});
+  const d=await r.json();
+  showAlert('tg-msg',d.ok?'al-ok':'al-err',d.ok?'✓ Сообщение отправлено! Проверьте Telegram.':'✗ Ошибка отправки. Проверьте Chat ID в app.py');
+}
+
+// ─── Poll status every 5s ─────────────────────────────────────────────────
+setInterval(fetchStatus,5000);
+setInterval(fetchLog,10000);
+
+init();
+</script>
+</body>
+</html>
